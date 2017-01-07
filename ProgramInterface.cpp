@@ -1,6 +1,8 @@
 #include "ProgramInterface.hpp"
 #include <iostream>
 #include <fstream>
+#include <direct.h>
+#include <Windows.h>
 using namespace std;
 
 void ProgramInterface::displayMenu() {
@@ -99,7 +101,8 @@ cmd ProgramInterface::inputResponse(string input, bool isFront, Deck &d, DeckLis
 
 void ProgramInterface::saveAndQuit(Deck &d, DeckList &dl) {
 	fstream outputFile;
-	outputFile.open(d.getDeckName() + ".txt", ios::app);
+	_mkdir("Decks");
+	outputFile.open("Decks/" + d.getDeckName() + ".txt", ios::app);
 
 	vector<Card> deck = d.getDeck();
 	for (size_t i = 0; i < deck.size(); ++i) {
@@ -120,38 +123,48 @@ void ProgramInterface::saveAndQuit(Deck &d, DeckList &dl) {
 }
 
 void ProgramInterface::openDeck() {
-	string deckName;
-	ifstream getDecks;
-	ifstream openDeck;
-	int deckNum = 1;
-	vector<int> deckNums;
-	vector<string> deckNames;
-	string input;
-	getDecks.open("deckList.txt");
 
-	cout << "Here's a list of all of your card decks.\n";
-	if (getDecks) {
-		while (getline(getDecks, deckName)) {
-			deckNums.push_back(deckNum);
-			deckNames.push_back(deckName);
-			cout << deckNum++ << ". " << deckName << endl;
-		}
-	}
-	else {
-		cout << "ERROR: Cannot open the deckList.txt file.\n";
+	char ENTER;
+	ifstream openDeckFile;
+	int deckNum = 1;
+	int input;
+	string front, back;
+	vector<string> deckNames;
+
+	HANDLE hFind;
+	WIN32_FIND_DATA data;
+	SetCurrentDirectory("Decks\\");
+	hFind = FindFirstFile("*.txt", &data);
+	if (hFind != INVALID_HANDLE_VALUE) {
+		do {
+			cout << deckNum << ". ";
+			cout << data.cFileName << endl;
+			deckNum++;
+			deckNames.push_back(data.cFileName);
+		} while (FindNextFile(hFind, &data));
+		FindClose(hFind);
 	}
 	
 	cin.ignore();
-	cout << "Type in the name of the deck you wish to play, or type 0 to return to the menu.\n";
-	getline(cin, input);
-
-	if (input == "0") {
+	cout << "Type in the number of the deck you wish to play, or type 0 to return to the menu.\n";
+	cin >> input;
+	if (input == 0) {
+		SetCurrentDirectory("..");
 		displayMenu();
 	}
 	else {
-		openDeck.open(input + ".txt");
-		if (openDeck)
-			;
+		openDeckFile.open(deckNames[input - 1]);
+		while (openDeckFile) {
+			getline(openDeckFile, front, '\t');
+			cout << "Front:\n" << front << endl;
+			cin.ignore();
+			cin.get();
+			getline(openDeckFile, back);
+			cout << "Back:\n" << back << endl;
+			cin.get();
+		}
+		SetCurrentDirectory("..");
+		displayMenu();
 	}
 }
 
